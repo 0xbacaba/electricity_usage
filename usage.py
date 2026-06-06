@@ -6,21 +6,15 @@ import converter
 from dotenv import load_dotenv
 from dateutil import parser
 
+from settings import API, ENTITY_IDS, START_TIME, END_TIME, COST, FULL_FEED_IN_TARIFF, PARTIAL_FEED_IN_TARIFF
+
 if not load_dotenv():
     print("Failed to load .env, trying to continue anyways...")
 
-API = "https://home.server.local/api"
-ENTITY_IDS = "sensor.stromzaehler_haus_total_energy_bought_1_8_0,sensor.stromzaehler_pv_total_energy_sold_2_8_0"
-START_TIME = "2026-05-28T00:00:00+02:00"
-END_TIME = "2026-06-03T00:00:00+02:00"
-
 END_TIME_URLENCODED = requests.utils.quote(END_TIME)
+RAW_ENTITY_IDS = ",".join(ENTITY_IDS.keys())
 
 ENDPOINT = f"{API}/history/period/{START_TIME}?filter_entity_id={ENTITY_IDS}&minimal_response=true&end_time={END_TIME_URLENCODED}"
-
-COST = 0.29  # €/kWh
-PARTIAL_FEED_IN_TARIFF = 0.0779  # €/kWh
-FULL_FEED_IN_TARIFF = 0.1235  # €/kWh
 
 def fetch_data(csv_file: str, cache_file: str):
     """
@@ -148,6 +142,7 @@ def print_info(energy, unit, tested_battery_capacities: [str]):
     print_costs(unit, FULL_FEED_IN_TARIFF, total_bought, total_sold)
 
 
-energy = fetch_data('data.csv', 'data.json')
+if __name__ == "__main__":
+    energy = fetch_data('data.csv', 'data.json')
 
-print_info(energy, "kWh", [0, 1, 2, 3, 5, 10])
+    print_info(energy, "kWh", [0, 1, 2, 3, 5, 10])

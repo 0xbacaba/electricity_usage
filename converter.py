@@ -1,6 +1,7 @@
 import csv
 from datetime import datetime
 from dateutil import parser
+from settings import ENTITY_IDS
 
 # output format:
 # energy: { <datetime>: { bought: <float>, sold: <float> } }
@@ -11,10 +12,6 @@ class Builder:
         self.last_values = {}  # {<entity_id>: <float>}
 
     def add_absolute(self, entity_id, value, time):
-        keys = {
-            "sensor.stromzaehler_haus_total_energy_bought_1_8_0": "bought",
-            "sensor.stromzaehler_pv_total_energy_sold_2_8_0": "sold"
-        }
         if value == "unavailable":
             return
         value = float(value)
@@ -25,7 +22,7 @@ class Builder:
         change = value - self.last_values[entity_id]
         self.last_values[entity_id] = value
 
-        for eid, key in keys.items():
+        for eid, key in ENTITY_IDS.items():
             if time not in self.values:
                 self.values[time] = {}
             # we need to ensure every entry has both keys (bought and sold)
