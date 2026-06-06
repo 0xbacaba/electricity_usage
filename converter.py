@@ -7,7 +7,7 @@ from dateutil import parser
 
 class Builder:
     def __init__(self):
-        self.values = {}  # in output format {<datetime>: { bought: <float>, sold: <float> }}
+        self.values = {}  # in output format
         self.last_values = {}  # {<entity_id>: <float>}
 
     def add_absolute(self, entity_id, value, time):

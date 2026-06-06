@@ -22,15 +22,23 @@ COST = 0.29  # €/kWh
 PARTIAL_FEED_IN_TARIFF = 0.0779  # €/kWh
 FULL_FEED_IN_TARIFF = 0.1235  # €/kWh
 
-def fetch_data(output_file: str):
-    if os.path.exists(output_file):
+def fetch_data(csv_file: str, cache_file: str):
+    """
+    First checks for the csv_file. If it doesn't exist, fetches the data from the HomeAssistant api from START_TIME to END_TIME and caches it in the cache_file.
+    The resulting data will be converted to the internal format (see ./converter.py) and returned.
+    """
+    if os.path.exists(csv_file):
+        print("using data from csv file")
+        return converter.from_csv(csv_file)
+
+    if os.path.exists(cache_file):
         print("checking cache...")
-        with open(output_file, 'r') as file:
+        with open(cache_file, 'r') as file:
             cached_data = json.load(file)
             try:
                 if parser.parse(cached_data[0][0]['last_changed']) == parser.parse(START_TIME):
                     print("using cached data")
-                    return cached_data
+                    return converter.from_json(cached_data)
                 print("cache out-of-date")
             except IndexError as e:
                 print(f"error reading cached data: {e}")
@@ -47,10 +55,10 @@ def fetch_data(output_file: str):
     data = json.loads(response.text)
     if len(data) == 0:
         raise Exception("Failed to fetch data: Got empty response")
-    with open(output_file, 'w') as file:
+    with open(cache_file, 'w') as file:
         json.dump(data, file)
     print("done fetching")
-    return data
+    return converter.from_json(data)
 
 
 def get_min_battery_capacity(energy) -> (float, float):
@@ -117,7 +125,7 @@ def get_total_sold_with_battery(battery_capacity: float, energy) -> (float, floa
 
     return (total_bought, total_sold)
 
-def print_costs(feed_in_tariff, total_bought, total_sold):
+def print_costs(unit, feed_in_tariff, total_bought, total_sold):
     total_cost = COST * total_bought
     total_win = feed_in_tariff * total_sold
     print(f"with {feed_in_tariff:> 6}€/{unit} feed-in tariff: {total_cost:.2f}€ - {total_win:.2f}€ = {total_cost - total_win:.2f}€ total costs")
@@ -125,23 +133,21 @@ def print_costs(feed_in_tariff, total_bought, total_sold):
 def print_info(energy, unit, tested_battery_capacities: [str]):
     bought, min_capacity = get_min_battery_capacity(energy)
     print(f"min battery capacity: {min_capacity:> 3}{unit}, still have to buy: {bought:> 15}{unit}")
-    print_costs(PARTIAL_FEED_IN_TARIFF, bought, 0)
+    print_costs(unit, PARTIAL_FEED_IN_TARIFF, bought, 0)
 
     print()
     for capacity in tested_battery_capacities:
         bought, sold = get_total_sold_with_battery(capacity, energy)
         print(f"total sold with {capacity:> 3}{unit} battery: {sold:> 15}{unit}, had to buy: {bought:> 15}{unit}    ", end="")
-        print_costs(PARTIAL_FEED_IN_TARIFF, bought, sold)
+        print_costs(unit, PARTIAL_FEED_IN_TARIFF, bought, sold)
 
     print()
     total_bought = sum([item['bought'] for item in energy.values()])
     total_sold = sum([item['sold'] for item in energy.values()])
     print(f"total sold when selling all solar: {total_sold}{unit}, had to buy: {total_bought}{unit}")
-    print_costs(FULL_FEED_IN_TARIFF, total_bought, total_sold)
+    print_costs(unit, FULL_FEED_IN_TARIFF, total_bought, total_sold)
 
 
-data = fetch_data('data.json')
-unit = data[0][0]["attributes"]["unit_of_measurement"]
+energy = fetch_data('data.csv', 'data.json')
 
-energy = converter.from_json(data)
-print_info(energy, unit, [0, 1, 2, 3, 5, 10])
+print_info(energy, "kWh", [0, 1, 2, 3, 5, 10])
