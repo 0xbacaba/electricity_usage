@@ -122,23 +122,23 @@ def get_total_sold_with_battery(battery_capacity: float, energy) -> (float, floa
 def print_costs(unit, feed_in_tariff, total_bought, total_sold):
     total_cost = COST * total_bought
     total_win = feed_in_tariff * total_sold
-    print(f"with {feed_in_tariff:> 6}€/{unit} feed-in tariff: {total_cost:.2f}€ - {total_win:.2f}€ = {total_cost - total_win:.2f}€ total costs")
+    print(f"with {feed_in_tariff:> 6} €/{unit} feed-in tariff: {total_cost:.2f} € - {total_win:.2f} € = {total_cost - total_win:.2f} € total costs")
 
 def print_info(energy, unit, tested_battery_capacities: [str]):
     bought, min_capacity = get_min_battery_capacity(energy)
-    print(f"min battery capacity: {min_capacity:> 3}{unit}, still have to buy: {bought:> 15}{unit}")
+    print(f"min battery capacity: {min_capacity:> 3.4f} {unit}, still have to buy: {bought:.4f} {unit}")
     print_costs(unit, PARTIAL_FEED_IN_TARIFF, bought, 0)
 
     print()
     for capacity in tested_battery_capacities:
         bought, sold = get_total_sold_with_battery(capacity, energy)
-        print(f"total sold with {capacity:> 3}{unit} battery: {sold:> 15}{unit}, had to buy: {bought:> 15}{unit}    ", end="")
+        print(f"total sold with {capacity:> 3} {unit} battery: {sold:> 10.4f} {unit}, had to buy: {bought:> 10.4f} {unit}    ", end="")
         print_costs(unit, PARTIAL_FEED_IN_TARIFF, bought, sold)
 
     print()
     total_bought = sum([item['bought'] for item in energy.values()])
     total_sold = sum([item['sold'] for item in energy.values()])
-    print(f"total sold when selling all solar: {total_sold}{unit}, had to buy: {total_bought}{unit}")
+    print(f"total sold when selling all solar: {total_sold:.4f} {unit}, had to buy: {total_bought:.4f} {unit}")
     print_costs(unit, FULL_FEED_IN_TARIFF, total_bought, total_sold)
 
 
